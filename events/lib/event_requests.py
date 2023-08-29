@@ -28,6 +28,8 @@ def create_event(url, headers, data) -> bool:
 def remove_event(event, headers) -> bool:
     # remove an event page
     url = get_delete_url(get(get_page_url(event), headers))
+    if url == None:
+        return False
     text = get(url, headers)
     data = delete_event(text)
     return post(url, headers, data)

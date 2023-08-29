@@ -260,6 +260,8 @@ def get_page_url(event):
     return "https://live-csu-northridge.pantheonsite.io" + makeAlias(event["title"])
 
 def get_delete_url(text):
+    if text == None:
+        return text
     soup = BeautifulSoup(text, "lxml")
     return "https://live-csu-northridge.pantheonsite.io" + soup.select_one('[data-drupal-link-system-path*="/delete"]')["href"]
 
