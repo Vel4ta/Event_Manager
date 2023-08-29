@@ -30,6 +30,13 @@ def remove_expired(events, dates, expired_events):
     # sort then find youngest of oldest
     # cut at youngest
     sort_by(events, dates)
+    # does not account for timezones
+    # super lazy and incomplete method for switching from edt to pst
+    # only implimented on csunas.org server
+    # didn't feel like I needed to impliment a full solution
+    # since this entire program is only a temporary fill in solution
+    # use package pytz or build a subclass of tzinfo for a real solution
+    # t= date.hour + (date.minute/100.0) - 3.0
     date = datetime.now()
     t= date.hour + (date.minute/100.0)
     i, n = 0, len(dates)
@@ -59,7 +66,14 @@ def schedule_next_run(date, command, id, user):
         for job in cron.find_comment(comment=id):
             cron.remove(job)
         job = cron.new(command=command, comment=id)
-        time, _ = date.get_time()
+        _, time = date.get_time()
+        # super bad and lazy and incomplete way of converting from edt to pst
+        # these are school events so most of the time events will end before a rollover is necessary
+        # if a rollover SHOULD happen just ignore it and let the remove_expired func handle it
+        # not a universal solution
+        # only implimented on csunas.org server
+        # if time < 21.0:
+        #     time += 3.0
         hr = int(time)
         min = int((time - float(hr)) * 100)
         job.setall(datetime(date.get_year(), date.get_month(), date.get_day(), hr, min))
