@@ -223,7 +223,7 @@ def form_update(text, events):
     "op": lambda _: "Save"
     }
     
-    soup = BeautifulSoup(text, "lxml")
+    soup = BeautifulSoup(text, "html.parser")
     for key in full_page_form_data.keys():
         full_page_form_data[key] = full_page_form_data[key](soup.select_one('[name="' + key + '"]'))
     return full_page_form_data
@@ -250,7 +250,7 @@ def event_form(text, event):
         "path[0][alias]": lambda _: makeAlias(event["title"]),
         "op": lambda _: "Save"
     }
-    soup = BeautifulSoup(text, "lxml")
+    soup = BeautifulSoup(text, "html.parser")
     for key in form_data.keys():
         form_data[key] = form_data[key](soup.select_one('[name="' + key + '"]'))
     return form_data
@@ -262,7 +262,7 @@ def get_page_url(event):
 def get_delete_url(text):
     if text == None:
         return text
-    soup = BeautifulSoup(text, "lxml")
+    soup = BeautifulSoup(text, "html.parser")
     return "https://live-csu-northridge.pantheonsite.io" + soup.select_one('[data-drupal-link-system-path*="/delete"]')["href"]
 
 def delete_event(text):
@@ -275,7 +275,7 @@ def delete_event(text):
         "form_id": get_value,
         "op": lambda _: "Delete"
     }
-    soup = BeautifulSoup(text, "lxml")
+    soup = BeautifulSoup(text, "html.parser")
     for key in form_data.keys():
         form_data[key] = form_data[key](soup.select_one('[name="' + key + '"]'))
     return form_data
