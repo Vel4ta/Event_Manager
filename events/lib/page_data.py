@@ -26,8 +26,9 @@ class Builder:
         else:
             return self.event["location"]
     def makeCost(self):
-        if not (0 == self.event["cost"] or "" == str(self.event["cost"])):
-            return "<h5>cost: $" + str(self.event["cost"]) + "</h5>\n"
+        cost = str(self.event["cost"])
+        if not ("0" == cost or "" == cost):
+            return "<h5>cost: $" + cost + "</h5>\n"
         else:
             return ""
     def makeRegistration(self):
