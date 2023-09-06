@@ -27,7 +27,7 @@ class Builder:
             return self.event["location"]
     def makeCost(self):
         cost = str(self.event["cost"])
-        if not ("0" == cost or "" == cost):
+        if not ("0" == cost) and not ("" == cost):
             return "<h5>cost: $" + cost + "</h5>\n"
         else:
             return ""
