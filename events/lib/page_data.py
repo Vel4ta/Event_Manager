@@ -1,67 +1,46 @@
 from bs4 import BeautifulSoup
-
-def makeAlias(og):
-    info = og
-    return "/as/events/" + info.replace("(", "").replace(")", "").replace("-", "").replace(":", "").replace("&", "").replace("  ", " ").replace(" ", "-").replace('"', '\"')
-def makeLink(link, text):
-    return "<a href=\"" + link + "\">" + text + "</a>"
-def makeTitle(info):
-    return "<h2>" + makeLink(makeAlias(info), info) + "</h2>\n"
-def makeDate(info):
-    return "<h3>" + info.split(",12:00am", 1)[0] + "</h3>\n"
-def makeLocation(info):
-    if not ("" is info):
-        return "<h4>" + info + "</h4>\n"
-    else:
-        return info
-def makeCost(info):
-    if not (0 == info):
-        return "<h5>cost: $" + str(info) + "</h5>\n"
-    else:
-        return ""
-def makeRegistration(info):
-    if not ("" is info):
-        return "<p>" + makeLink(info, "Registration") + "</p>\n"
-    else:
-        return info
-def makeLede(info):
-    return "<p>" + info + "</p>\n"
-def makeReadMore(info):
-    return makeLink(makeAlias(info), "Read more\n\n")
-def makeBody(info):
-    return "<p>" + info + "</p>\n"
-
+from events.lib.DateBuilder import DateBuilder
 
 class Builder:
-    
     def __init__(self, event: dict):
         self.event = event
     
     def display(self) -> str:
-        ops = {
-            "title": makeTitle,
-            "date": makeDate,
-            "lede": makeLede
-        }
-        o = ""
-        for key in ops.keys():
-            o += ops[key](self.event[key])
-        o += makeReadMore(self.event["title"])
-        return o
+        return self.makeTitle() + self.makeDate() + self.makeLede() + self.makeReadMore()
 
     def full_display(self) -> str:
-        ops = {
-            "title": makeTitle,
-            "date": makeDate,
-            "location": makeLocation,
-            "cost": makeCost,
-            "registration": makeRegistration,
-            "body": makeBody
-        }
-        o = ""
-        for key in ops.keys():
-            o += ops[key](self.event[key])
-        return o
+        return self.makeTitle() + self.makeDate() + self.makeLocation() + self.makeCost() + self.makeRegistration() + self.makeBody()
+    
+    def makeAlias(self):
+        info = self.event["title"] + " " + DateBuilder(self.event["date"]).displayDate()
+        return "/as/events/" + info.replace("(", "").replace(")", "").replace("-", "").replace(":", "").replace("&", "").replace(".", "").replace("  ", " ").replace(" ", "-").replace('"', '\"')
+    def makeLink(self, link, text):
+        return "<a href=\"" + link + "\">" + text + "</a>"
+    def makeTitle(self):
+        return "<h2>" + self.makeLink(self.makeAlias(), self.event["title"]) + "</h2>\n"
+    def makeDate(self):
+        return "<h3>" + self.event["date"].split(",12:00am", 1)[0].replace(",", ", ") + "</h3>\n"
+    def makeLocation(self):
+        if not ("" is self.event["location"]):
+            return "<h4>" + self.event["location"] + "</h4>\n"
+        else:
+            return self.event["location"]
+    def makeCost(self):
+        if not (0 == self.event["cost"] or "" == str(self.event["cost"])):
+            return "<h5>cost: $" + str(self.event["cost"]) + "</h5>\n"
+        else:
+            return ""
+    def makeRegistration(self):
+        if not ("" is self.event["registration"]):
+            return "<p>" + self.makeLink(self.event["registration"], "Registration") + "</p>\n"
+        else:
+            return self.event["registration"]
+    def makeLede(self):
+        return "<p>" + self.event["lede"] + "</p>\n"
+    def makeReadMore(self):
+        return self.makeLink(self.makeAlias(), "Read more\n\n")
+    def makeBody(self):
+        return "<p>" + self.event["body"] + "</p>\n"
 
 def get_value(item):
     try:
@@ -84,18 +63,20 @@ def get_innertext(item):
         else:
             return ""
 
-def new_events(events):
-    def add_content(_):
-        out = ""
-        for event in events:
-            out += Builder(event).display()
-        return out
-    return add_content
+def fill_form(text, form: dict):
+    soup = BeautifulSoup(text, "html.parser")
+    for key in form.keys():
+        form[key] = form[key](soup.select_one('[name="' + key + '"]'))
+    return form
 
 def form_update(text, events):
     # the calendar/events page
     if text == None:
         return text
+    
+    body_value = ""
+    for event in events:
+        body_value += Builder(event).display()
     full_page_form_data = {
     "changed": get_value,
     "title[0][value]": get_value,
@@ -111,7 +92,7 @@ def form_update(text, events):
     "field_fw_section_nav[0][uri]": get_value,
     "field_fw_section_nav[0][title]": get_value,
     "field_fw_section_nav[0][_weight]": get_value,
-    "body[0][value]": new_events(events),
+    "body[0][value]": lambda _: body_value,
     "body[0][format]": lambda _: "basic_html",
     "field_full_width_modules[add_more][add_more_delta]": get_value,
     "revision_log[0][value]": get_innertext,
@@ -223,41 +204,30 @@ def form_update(text, events):
     "op": lambda _: "Save"
     }
     
-    soup = BeautifulSoup(text, "html.parser")
-    for key in full_page_form_data.keys():
-        full_page_form_data[key] = full_page_form_data[key](soup.select_one('[name="' + key + '"]'))
-    return full_page_form_data
-
-
-def build_event(event):
-    def add_content(_):
-        return Builder(event).full_display()
-    return add_content
+    return fill_form(text, full_page_form_data)
 
 def event_form(text, event):
     # an event page
     if text == None:
         return text
+    built_event = Builder(event)
     form_data = {
         "title[0][value]": lambda _: event["title"],
         "changed": get_value,
         "form_build_id": get_value,
         "form_token": get_value,
         "form_id": get_value,
-        "field_prg_content[0][value]": build_event(event),
+        "field_prg_content[0][value]": lambda _: built_event.full_display(),
         "field_prg_content[0][format]": lambda _: "basic_html",
         "revision_log[0][value]": get_innertext,
-        "path[0][alias]": lambda _: makeAlias(event["title"]),
+        "path[0][alias]": lambda _: built_event.makeAlias(),
         "op": lambda _: "Save"
     }
-    soup = BeautifulSoup(text, "html.parser")
-    for key in form_data.keys():
-        form_data[key] = form_data[key](soup.select_one('[name="' + key + '"]'))
-    return form_data
+    return fill_form(text, form_data)
 
 
 def get_page_url(event):
-    return "https://live-csu-northridge.pantheonsite.io" + makeAlias(event["title"])
+    return "https://live-csu-northridge.pantheonsite.io" + Builder(event).makeAlias()
 
 def get_delete_url(text):
     if text == None:
@@ -275,7 +245,4 @@ def delete_event(text):
         "form_id": get_value,
         "op": lambda _: "Delete"
     }
-    soup = BeautifulSoup(text, "html.parser")
-    for key in form_data.keys():
-        form_data[key] = form_data[key](soup.select_one('[name="' + key + '"]'))
-    return form_data
+    return fill_form(text, form_data)

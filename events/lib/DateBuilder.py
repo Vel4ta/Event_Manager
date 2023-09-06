@@ -45,3 +45,9 @@ class DateBuilder:
     def makeDate(self):
         start, end = self.get_time()
         return (self.get_year(), self.get_month(), self.get_day(), start, end)
+
+    def displayDate(self):
+        o = ""
+        for value in self.makeDate():
+            o += str(value) + " "
+        return o.strip()
