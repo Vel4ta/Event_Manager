@@ -1,5 +1,5 @@
 from requests import get as rget, post as rpost
-from events.lib.page_data import form_update, event_form, get_page_url, get_delete_url, delete_event
+from events.lib.page_data import form_update, event_form, get_page_url, get_delete_url, delete_event, officer_form
 
 def get(url, headers) -> str or None:
     r = rget(url=url, headers=headers)
@@ -23,6 +23,12 @@ def create_event(url, headers, data) -> bool:
     # make an event page
     text = get(url, headers)
     data = event_form(text, data)
+    return post(url, headers, data)
+
+def create_officer(url, headers, data) -> bool:
+    # make an event page
+    text = get(url, headers)
+    data = officer_form(text, data)
     return post(url, headers, data)
 
 def remove_event(event, headers) -> bool:

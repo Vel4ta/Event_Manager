@@ -1,6 +1,25 @@
 from bs4 import BeautifulSoup
 from events.lib.DateBuilder import DateBuilder
 
+class Officer:
+    def __init__(self, officer: dict):
+        self.officer = officer
+    
+    def makeAddress(self) -> str:
+        return self.makeImage() + self.makeOfficeHours()
+    def makeAlias(self):
+        return "/as/student-leadership-" + self.officer["title"].replace(" ", "-")
+    def makeImage(self):
+        return "<img data-align=\"left\" src=\"" + self.officer["image"] + "\">"
+    def makeOfficeHours(self):
+        ul = "<ul>\n"
+        for day_key in self.officer["office_hours"]:
+            if self.officer["office_hours"][day_key] == None:
+                continue
+            ul += "<li>" + day_key + ":" + self.officer["office_hours"][day_key] + "<\li>\n"
+        ul += "</ul>"
+        return "<p>Office Hours:</p>\n" + ul
+
 class Builder:
     def __init__(self, event: dict):
         self.event = event
@@ -19,7 +38,7 @@ class Builder:
     def makeTitle(self):
         return "<h2>" + self.makeLink(self.makeAlias(), self.event["title"]) + "</h2>\n"
     def makeDate(self):
-        return "<h3>" + self.event["date"].split(",12:00am", 1)[0].replace(",", ", ") + "</h3>\n"
+        return "<h3>" + self.event["date"].replace(",", ", ").split(", 12:00am", 1)[0] + "</h3>\n"
     def makeLocation(self):
         if not ("" is self.event["location"]):
             return "<h4>" + self.event["location"] + "</h4>\n"
@@ -27,10 +46,10 @@ class Builder:
             return self.event["location"]
     def makeCost(self):
         cost = str(self.event["cost"])
-        if not ("0" == cost) and not ("" == cost):
-            return "<h5>cost: $" + cost + "</h5>\n"
-        else:
+        if "0" == cost or "" == cost or cost == None:
             return ""
+        else:
+            return "<h5>cost: $" + cost + "</h5>\n"
     def makeRegistration(self):
         if not ("" is self.event["registration"]):
             return "<p>" + self.makeLink(self.event["registration"], "Registration") + "</p>\n"
@@ -222,6 +241,35 @@ def event_form(text, event):
         "field_prg_content[0][format]": lambda _: "basic_html",
         "revision_log[0][value]": get_innertext,
         "path[0][alias]": lambda _: built_event.makeAlias(),
+        "op": lambda _: "Save"
+    }
+    return fill_form(text, form_data)
+
+def officer_form(text, officer):
+    # an officer page
+    if text == None:
+        return text
+    built_officer = Officer(officer)
+    form_data = {
+        "changed": get_value,
+        "title[0][value]": lambda _: officer["title"],
+        "form_build_id": get_value,
+        "form_token": get_value,
+        "form_id": get_value,
+        "field_headline_cc[0][value]": lambda _: officer["headline"],
+        "field_title_position[0][value]": lambda _: officer["title"],
+        "field_cc_optional_address[0][value]": lambda _: built_officer.makeAddress(),
+        "field_cc_optional_address[0][format]": lambda _: "basic_html",
+        "field_phone[0][value]": get_value,
+        "field_fax[0][value]": get_value,
+        "field_email[0][value]": lambda _: officer["email"],
+        "field_cc_blurb[0][value]": get_value,
+        "field_cc_blurb[0][format]": lambda _: "basic_html",
+        "body[0][value]": get_innertext,
+        "body[0][format]": lambda _: "basic_html",
+        "revision": get_value,
+        "revision_log[0][value]": get_innertext,
+        "path[0][alias]": lambda _: built_officer.makeAlias(),
         "op": lambda _: "Save"
     }
     return fill_form(text, form_data)
