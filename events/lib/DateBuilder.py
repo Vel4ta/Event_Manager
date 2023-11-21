@@ -1,3 +1,4 @@
+from datetime import datetime
 class DateBuilder:
     
     def __init__(self, raw_date: str):
@@ -14,7 +15,7 @@ class DateBuilder:
         try:
             return int(self.raw_date.split(",")[1].strip())
         except:
-            return 2023
+            return datetime.now().year
     def get_time(self):
         # 0 - 23
         def convert(time):
